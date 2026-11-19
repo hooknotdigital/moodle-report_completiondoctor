@@ -1,0 +1,4 @@
+/* The hint line above the Learner search box keeps its line when empty, so the box never moves. */
+.report-completiondoctor-hint {
+    min-height: 1.5em;
+}
