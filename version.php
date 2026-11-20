@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'report_completiondoctor';
-$plugin->version   = 2026111600;
+$plugin->version   = 2026112000;
 $plugin->requires  = 2024100700; // Moodle 4.5 LTS.
 $plugin->supported = [405, 503];
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.4.0';
+$plugin->release   = '0.4.1';

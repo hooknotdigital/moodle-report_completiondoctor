@@ -33,6 +33,7 @@ class behat_report_completiondoctor extends behat_base {
      * Recognised page names:
      * | Page type | Identifier | Description |
      * | Diagnosis | Course shortname | The Completion Doctor page of that course |
+     * | Site home diagnosis | Anything | The page with the site home given as the course |
      *
      * @param string $type Page type.
      * @param string $identifier Identifier.
@@ -42,6 +43,8 @@ class behat_report_completiondoctor extends behat_base {
         switch (strtolower($type)) {
             case 'diagnosis':
                 return new moodle_url('/report/completiondoctor/index.php', ['courseid' => $this->get_course_id($identifier)]);
+            case 'site home diagnosis':
+                return new moodle_url('/report/completiondoctor/index.php', ['courseid' => SITEID]);
             default:
                 throw new Exception("Unrecognised report_completiondoctor page type '{$type}'.");
         }
@@ -83,5 +86,20 @@ class behat_report_completiondoctor extends behat_base {
         $aggregation = new completion_aggregation(['course' => $courseid, 'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY]);
         $aggregation->setMethod($method === 'any' ? COMPLETION_AGGREGATION_ANY : COMPLETION_AGGREGATION_ALL);
         $aggregation->save();
+    }
+
+    /**
+     * Check the address of the current page does not contain some text.
+     *
+     * Example: the address should not contain "sesskey"
+     *
+     * @Then /^the address should not contain "(?P<text>[^"]*)"$/
+     * @param string $text
+     */
+    public function the_address_should_not_contain(string $text): void {
+        $url = $this->getSession()->getCurrentUrl();
+        if (str_contains($url, $text)) {
+            throw new \Behat\Mink\Exception\ExpectationException("The address {$url} contains '{$text}'.", $this->getSession());
+        }
     }
 }

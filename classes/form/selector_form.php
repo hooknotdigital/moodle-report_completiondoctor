@@ -55,7 +55,7 @@ class selector_form extends \moodleform {
                 'requiredcapabilities' => ['report/completiondoctor:view'],
             ]);
             $mform->setType('courseid', PARAM_INT);
-            $mform->addRule('courseid', null, 'required', null, 'client');
+            $mform->addRule('courseid', get_string('chooseacoursefirst', 'report_completiondoctor'), 'required', null, 'client');
             $mform->addElement('static', 'choosefirst', '', get_string('choosecoursefirst', 'report_completiondoctor'));
             $this->add_action_buttons(false, get_string('continue'));
             return;
@@ -86,14 +86,19 @@ class selector_form extends \moodleform {
             },
         ]);
         $mform->setType('userid', PARAM_INT);
-        $mform->addRule('userid', null, 'required', null, 'client');
+        $mform->addRule('userid', get_string('chooselearnerfirst', 'report_completiondoctor'), 'required', null, 'client');
         $mform->addHelpButton('userid', 'selectuser', 'report_completiondoctor');
 
         $this->add_action_buttons(false, get_string('rundiagnosis', 'report_completiondoctor'));
     }
 
     /**
-     * Clear a learner the viewer may not diagnose.
+     * Leave out the session key, and clear a learner the viewer may not diagnose.
+     *
+     * This form only searches and changes nothing, so it needs no session key. Sent by
+     * GET, the key would show in the address bar, browser history and server logs, and
+     * in every link people copy from there. The submission marker goes too: with it,
+     * moodleform would insist on the key.
      *
      * A submitted value wins over set_data(), and the autocomplete shows a value it
      * cannot name as the bare user id. So a stale or edited userid (a learner since
@@ -102,6 +107,11 @@ class selector_form extends \moodleform {
      */
     public function definition_after_data() {
         $mform = $this->_form;
+        foreach (['sesskey', '_qf__' . $this->_formname] as $name) {
+            if ($mform->elementExists($name)) {
+                $mform->removeElement($name);
+            }
+        }
         $course = $this->_customdata['course'] ?? null;
         if (!$course || !$mform->elementExists('userid')) {
             return;

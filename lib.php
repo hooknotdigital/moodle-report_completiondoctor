@@ -25,11 +25,17 @@
 /**
  * Add a link to the report in the course's Reports menu.
  *
+ * Not on the site home, which is not a course with learners. Managers find the
+ * site-wide page in Site administration > Reports.
+ *
  * @param navigation_node $navigation The navigation node to extend.
  * @param stdClass $course The course object.
  * @param context $context The course context.
  */
 function report_completiondoctor_extend_navigation_course($navigation, $course, $context) {
+    if ($course->id == SITEID) {
+        return;
+    }
     if (has_capability('report/completiondoctor:view', $context)) {
         $url = new moodle_url('/report/completiondoctor/index.php', ['courseid' => $course->id]);
         $navigation->add(

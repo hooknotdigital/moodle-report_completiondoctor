@@ -21,83 +21,92 @@
 
     Context variables required for this template:
     * heading - Report heading string
-    * chain - {rows: [{label, ok, detail}]}
-    * criteria - {aggregation, rows, coursecomplete, coursecompletelabel, coursecompletestatus}
-    * activities - {rows: [{activity, tracking, requirements, state, ok, notes}], hasrows}
-    * availability - {rows, allclear, allclearmsg}
-    * cron - {rows}
-    * verdict - {iscomplete, message, blockers, hasblockers}
+    * verdict - {iscomplete, message, blockers: [{text, actions: [{url, label, arialabel}]}], hasblockers, tasknote}
     * others - How many other learners in the course have not completed it, as a sentence
+    * otherslink - Optional {url, label} for the course completion report
+    * chain - {rows: [{label, ok, detail, skipped}]}
+    * criteria - {aggregation, rows: [{label, ok, detail}], coursecomplete, coursecompletelabel, coursecompletestatus}
+    * activities - {rows: [{activity, cmid, required, tracking, requirements, state, ok, problem, notes}], hasrows, none}
+    * availability - {rows: [{label, detail, blocks}], allclear, allclearmsg}
+    * cron - {rows: [{label, ok, detail}]}
 
     Example context (json):
     {
         "heading": "Diagnosis: Jane Doe in Course 101",
-        "chain": {"rows": [{"label": "Site-level completion tracking", "ok": true, "detail": "Enabled"}]},
-        "criteria": {"aggregation": "All of the criteria below are required.", "rows": [],
+        "verdict": {"iscomplete": false, "message": "This learner has not completed the course. What is blocking it:",
+            "blockers": [{"text": "Quiz 1: grade 60.00 out of 100.00, below the passing grade of 80.00.",
+                "actions": [{"url": "https://example.com/mod/quiz/view.php?id=2", "label": "Open the activity",
+                    "arialabel": "Open the activity: Quiz 1"}]}],
+            "hasblockers": true, "tasknote": ""},
+        "others": "3 other learners in this course have not completed it.",
+        "otherslink": {"url": "https://example.com/report/completion/index.php?course=2", "label": "Open the course completion report"},
+        "chain": {"rows": [{"label": "Site-level completion tracking", "ok": true, "detail": "Enabled", "skipped": false}]},
+        "criteria": {"aggregation": "All of the criteria below are required.",
+            "rows": [{"label": "Quiz 1", "ok": false, "detail": "Activities"}],
             "coursecomplete": false, "coursecompletelabel": "Course completion status",
             "coursecompletestatus": "Incomplete"},
-        "activities": {"hasrows": true, "rows": [{"activity": "Quiz 1", "modname": "quiz",
-            "tracking": "Automatic", "requirements": "Passing grade",
-            "state": "Incomplete", "ok": false, "notes": ["Grade: 60 / 100 (pass: 80)"]}]},
-        "availability": {"rows": [], "allclear": true, "allclearmsg": "No restrictions block this learner."},
-        "cron": {"rows": [{"label": "Regular completion task", "ok": true, "detail": "Last run: today. Next run: due now"}]},
-        "verdict": {"iscomplete": false, "message": "This learner is NOT complete.",
-            "blockers": ["Quiz 1: grade below pass"], "hasblockers": true},
-        "others": "3 other learners in this course have not completed it."
+        "activities": {"hasrows": true, "none": "No activity in this course tracks completion.",
+            "rows": [{"activity": "Quiz 1", "cmid": 2, "required": true, "tracking": "Automatic",
+            "requirements": ["Receive a grade: done", "Receive a passing grade: failed"],
+            "state": "Failed: below the passing grade", "ok": false, "problem": true,
+            "notes": ["Grade: 60.00 / 100.00 (pass: 80.00)"]}]},
+        "availability": {"rows": [], "allclear": true, "allclearmsg": "No activity that tracks completion is hidden from this learner or restricted."},
+        "cron": {"rows": [{"label": "Regular completion task", "ok": true, "detail": "Last run: today. Next run: due now"}]}
     }
 }}
 <div class="report-completiondoctor mt-4">
-    <h3>{{heading}}</h3>
+    <h3 id="{{uniqid}}-heading" tabindex="-1">{{heading}}</h3>
 
     {{! The verdict comes first: it is the answer people came for. }}
     <div class="alert {{#verdict.iscomplete}}alert-success{{/verdict.iscomplete}}{{^verdict.iscomplete}}alert-warning{{/verdict.iscomplete}}">
-        <strong>{{#str}} sectionverdict, report_completiondoctor {{/str}}:</strong> {{verdict.message}}
+        <strong>{{#str}} verdictlabel, report_completiondoctor {{/str}}</strong> {{verdict.message}}
         {{#verdict.hasblockers}}
         <ol class="mb-0 mt-2">
-            {{#verdict.blockers}}<li>{{.}}</li>{{/verdict.blockers}}
+            {{#verdict.blockers}}
+            <li>{{text}}{{#actions}} <a class="alert-link report-completiondoctor-action" href="{{url}}"{{#arialabel}} aria-label="{{.}}"{{/arialabel}}>{{label}}</a>{{/actions}}</li>
+            {{/verdict.blockers}}
         </ol>
         {{/verdict.hasblockers}}
+        {{#verdict.tasknote}}<p class="mb-0 mt-2">{{verdict.tasknote}}</p>{{/verdict.tasknote}}
     </div>
 
-    {{#others}}<p class="mb-3">{{.}}</p>{{/others}}
+    {{#others}}<p class="mb-3">{{.}}{{#otherslink}} <a class="report-completiondoctor-action" href="{{url}}">{{label}}</a>{{/otherslink}}</p>{{/others}}
 
-    <h4>{{#str}} sectionchain, report_completiondoctor {{/str}}</h4>
-    <table class="table table-sm generaltable">
+    <h4 id="{{uniqid}}-chain">{{#str}} sectionchain, report_completiondoctor {{/str}}</h4>
+    <table class="table table-sm generaltable" aria-labelledby="{{uniqid}}-chain">
         <tbody>
         {{#chain.rows}}
             <tr>
-                <td style="width: 2rem;">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}</td>
-                <td>{{label}}</td>
+                <th scope="row"><span class="report-completiondoctor-status">{{^skipped}}{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{/skipped}}</span>{{label}}</th>
                 <td>{{detail}}</td>
             </tr>
         {{/chain.rows}}
         </tbody>
     </table>
 
-    <h4>{{#str}} sectioncriteria, report_completiondoctor {{/str}}</h4>
+    <h4 id="{{uniqid}}-criteria">{{#str}} sectioncriteria, report_completiondoctor {{/str}}</h4>
     {{#criteria.aggregation}}<p class="text-muted">{{criteria.aggregation}}</p>{{/criteria.aggregation}}
-    <table class="table table-sm generaltable">
+    <table class="table table-sm generaltable" aria-labelledby="{{uniqid}}-criteria">
         <tbody>
         {{#criteria.rows}}
             <tr>
-                <td style="width: 2rem;">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}</td>
-                <td>{{{label}}}</td>
-                <td>{{{detail}}}</td>
+                <th scope="row"><span class="report-completiondoctor-status">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}</span>{{label}}</th>
+                <td>{{detail}}</td>
             </tr>
         {{/criteria.rows}}
             <tr class="table-active">
-                <td>{{#criteria.coursecomplete}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/criteria.coursecomplete}}{{^criteria.coursecomplete}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/criteria.coursecomplete}}</td>
-                <td><strong>{{criteria.coursecompletelabel}}</strong></td>
+                <th scope="row"><span class="report-completiondoctor-status">{{#criteria.coursecomplete}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/criteria.coursecomplete}}{{^criteria.coursecomplete}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/criteria.coursecomplete}}</span><strong>{{criteria.coursecompletelabel}}</strong></th>
                 <td><strong>{{criteria.coursecompletestatus}}</strong></td>
             </tr>
         </tbody>
     </table>
 
-    <h4>{{#str}} sectionactivities, report_completiondoctor {{/str}}</h4>
+    <h4 id="{{uniqid}}-activities">{{#str}} sectionactivities, report_completiondoctor {{/str}}</h4>
+    {{^activities.hasrows}}<p>{{activities.none}}</p>{{/activities.hasrows}}
     {{#activities.hasrows}}
-    {{! Five columns do not fit a phone: the table scrolls on its own, not the page. }}
-    <div class="table-responsive mb-3" tabindex="0" role="region" aria-label="{{#cleanstr}} sectionactivities, report_completiondoctor {{/cleanstr}}">
-    <table class="table table-sm generaltable">
+    {{! Six columns do not fit a phone: the table scrolls on its own, not the page. }}
+    <div class="table-responsive mb-3" tabindex="0" role="region" aria-labelledby="{{uniqid}}-activities">
+    <table class="table table-sm generaltable" aria-labelledby="{{uniqid}}-activities">
         <thead>
             <tr>
                 <th>{{#str}} activity, report_completiondoctor {{/str}}</th>
@@ -110,13 +119,11 @@
         <tbody>
         {{#activities.rows}}
             <tr>
-                <td>{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}} {{activity}}</td>
+                <th scope="row"><span class="report-completiondoctor-status">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#problem}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/problem}}{{^problem}}{{#pix}} i/info, core, {{#str}} statusinfo, report_completiondoctor {{/str}} {{/pix}}{{/problem}}{{/ok}}</span>{{activity}}{{#required}}<div class="small text-muted report-completiondoctor-indent">{{#str}} requiredforcourse, report_completiondoctor {{/str}}</div>{{/required}}</th>
                 <td>{{tracking}}</td>
-                <td>{{requirements}}</td>
+                <td>{{#requirements}}<div>{{.}}</div>{{/requirements}}</td>
                 <td>{{state}}</td>
-                <td>
-                    {{#notes}}<div class="small">{{.}}</div>{{/notes}}
-                </td>
+                <td>{{#notes}}<div class="small">{{.}}</div>{{/notes}}</td>
             </tr>
         {{/activities.rows}}
         </tbody>
@@ -124,17 +131,16 @@
     </div>
     {{/activities.hasrows}}
 
-    <h4>{{#str}} sectionavailability, report_completiondoctor {{/str}}</h4>
+    <h4 id="{{uniqid}}-availability">{{#str}} sectionavailability, report_completiondoctor {{/str}}</h4>
     {{#availability.allclear}}
         <p>{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}} {{availability.allclearmsg}}</p>
     {{/availability.allclear}}
     {{^availability.allclear}}
-    <table class="table table-sm generaltable">
+    <table class="table table-sm generaltable" aria-labelledby="{{uniqid}}-availability">
         <tbody>
         {{#availability.rows}}
             <tr>
-                <td style="width: 2rem;">{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}</td>
-                <td>{{label}}</td>
+                <th scope="row"><span class="report-completiondoctor-status">{{#blocks}}{{#pix}} i/invalid, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/blocks}}{{^blocks}}{{#pix}} i/info, core, {{#str}} statusinfo, report_completiondoctor {{/str}} {{/pix}}{{/blocks}}</span>{{label}}</th>
                 <td>{{detail}}</td>
             </tr>
         {{/availability.rows}}
@@ -142,16 +148,20 @@
     </table>
     {{/availability.allclear}}
 
-    <h4>{{#str}} sectioncron, report_completiondoctor {{/str}}</h4>
-    <table class="table table-sm generaltable">
+    <h4 id="{{uniqid}}-cron">{{#str}} sectioncron, report_completiondoctor {{/str}}</h4>
+    <table class="table table-sm generaltable" aria-labelledby="{{uniqid}}-cron">
         <tbody>
         {{#cron.rows}}
             <tr>
-                <td style="width: 2rem;">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/warning, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}</td>
-                <td>{{label}}</td>
+                <th scope="row"><span class="report-completiondoctor-status">{{#ok}}{{#pix}} i/valid, core, {{#str}} statusok, report_completiondoctor {{/str}} {{/pix}}{{/ok}}{{^ok}}{{#pix}} i/warning, core, {{#str}} statusproblem, report_completiondoctor {{/str}} {{/pix}}{{/ok}}</span>{{label}}</th>
                 <td>{{detail}}</td>
             </tr>
         {{/cron.rows}}
         </tbody>
     </table>
 </div>
+{{#js}}
+require(['report_completiondoctor/report'], function(report) {
+    report.init('{{uniqid}}-heading');
+});
+{{/js}}

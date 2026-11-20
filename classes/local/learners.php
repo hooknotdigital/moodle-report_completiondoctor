@@ -170,6 +170,72 @@ class learners {
     }
 
     /**
+     * Whether the viewer only sees the learners in their own groups.
+     *
+     * That is a course with separate groups, for a viewer without moodle/site:accessallgroups.
+     *
+     * @param \stdClass $course Course record.
+     * @return bool
+     */
+    public static function limited_to_own_groups(\stdClass $course): bool {
+        return groups_get_course_groupmode($course) == SEPARATEGROUPS
+            && !has_capability('moodle/site:accessallgroups', \context_course::instance($course->id));
+    }
+
+    /**
+     * Whether there is anyone the viewer may diagnose at all.
+     *
+     * Nobody, when the viewer is limited to their own groups and is in no group.
+     *
+     * @param \stdClass $course Course record.
+     * @return bool
+     */
+    public static function can_diagnose_anyone(\stdClass $course): bool {
+        return self::conditions($course) !== null;
+    }
+
+    /**
+     * Why a user is not one of the learners the viewer may diagnose, as a sentence.
+     *
+     * A viewer limited to their own groups is only told that the user is not a learner in
+     * those groups, unless the user shares a group with them: the viewer may not see who
+     * else is enrolled, so nothing more is said. Otherwise the real reason is given, which
+     * is often the answer the viewer came for (for example, a suspended account is why a
+     * learner is never marked complete).
+     *
+     * @param \stdClass $course Course record.
+     * @param int $userid A user who is not in for_course($course, $userid).
+     * @return string
+     */
+    public static function why_not(\stdClass $course, int $userid): string {
+        global $USER;
+        $context = \context_course::instance($course->id);
+        if (self::limited_to_own_groups($course)) {
+            $shared = array_intersect(
+                array_keys(groups_get_all_groups($course->id, $USER->id)),
+                array_keys(groups_get_all_groups($course->id, $userid))
+            );
+            if (!$shared) {
+                return get_string('learnernotinyourgroups', 'report_completiondoctor');
+            }
+        }
+        $user = \core_user::get_user($userid, 'id, deleted, suspended');
+        if (!$user || $user->deleted || !is_enrolled($context, $user)) {
+            return get_string('learnernotenrolled', 'report_completiondoctor');
+        }
+        // Core shows suspended accounts and enrolments only to those who may review enrolments
+        // (the Participants page's status column), so others are not told either.
+        $enrolreview = has_capability('moodle/course:enrolreview', $context);
+        if ($user->suspended || !is_enrolled($context, $user, '', true)) {
+            if (!$enrolreview) {
+                return get_string('learnernotactive', 'report_completiondoctor');
+            }
+            return get_string($user->suspended ? 'learneraccountsuspended' : 'learnerenrolmentinactive', 'report_completiondoctor');
+        }
+        return get_string('learnernottracked', 'report_completiondoctor');
+    }
+
+    /**
      * How a learner is named in the Learner field: the full name, then the identity fields.
      *
      * @param \stdClass $user User record with name fields and the identity fields.
@@ -199,11 +265,7 @@ class learners {
         global $DB, $USER;
 
         $conditions = ['u.suspended = 0'];
-        $context = \context_course::instance($course->id);
-        if (
-            groups_get_course_groupmode($course) != SEPARATEGROUPS
-            || has_capability('moodle/site:accessallgroups', $context)
-        ) {
+        if (!self::limited_to_own_groups($course)) {
             return [$conditions, []];
         }
         $groupids = array_keys(groups_get_all_groups($course->id, $USER->id));

@@ -69,6 +69,24 @@ final class selector_form_test extends \advanced_testcase {
     }
 
     /**
+     * The form is sent by GET and changes nothing, so it carries no session key into the
+     * address bar, and no submission marker that would make moodleform ask for one.
+     */
+    public function test_form_carries_no_session_key(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->setAdminUser();
+        $url = new \moodle_url('/report/completiondoctor/index.php');
+
+        foreach ([get_course($course->id), null] as $formcourse) {
+            $html = (new selector_form($url, ['course' => $formcourse], 'get'))->render();
+            $this->assertStringNotContainsString('name="sesskey"', $html);
+            $this->assertStringNotContainsString('_qf__', $html);
+            $this->assertStringNotContainsString(sesskey(), $html);
+        }
+    }
+
+    /**
      * Render the form as if it was submitted with this learner.
      *
      * @param \stdClass $course Course record.

@@ -90,6 +90,96 @@ final class learners_test extends \advanced_testcase {
     }
 
     /**
+     * Each user who cannot be diagnosed is told apart, so the page can say why.
+     */
+    public function test_why_a_user_cannot_be_diagnosed(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course(['enablecompletion' => 1]);
+        $suspendedaccount = $generator->create_and_enrol($course, 'student', ['suspended' => 1]);
+        $suspended = $generator->create_and_enrol($course, 'student', null, 'manual', 0, 0, ENROL_USER_SUSPENDED);
+        $ended = $generator->create_and_enrol($course, 'student', null, 'manual', 0, time() - DAYSECS);
+        $teacher = $generator->create_and_enrol($course, 'editingteacher');
+        $stranger = $generator->create_user();
+        $this->setUser($teacher);
+        $course = get_course($course->id);
+
+        $expected = [
+            [$suspendedaccount, 'learneraccountsuspended'],
+            [$suspended, 'learnerenrolmentinactive'],
+            [$ended, 'learnerenrolmentinactive'],
+            [$teacher, 'learnernottracked'],
+            [$stranger, 'learnernotenrolled'],
+        ];
+        foreach ($expected as [$user, $stringid]) {
+            $this->assertSame(
+                get_string($stringid, 'report_completiondoctor'),
+                learners::why_not($course, (int) $user->id),
+                $stringid
+            );
+        }
+        $this->assertSame(get_string('learnernotenrolled', 'report_completiondoctor'), learners::why_not($course, 999999));
+    }
+
+    /**
+     * A viewer limited to their own groups learns nothing about users outside them. For a
+     * user in one of their groups, a suspended account or enrolment is named only to a viewer
+     * who may review enrolments, as on the Participants page.
+     */
+    public function test_why_not_says_nothing_about_users_outside_the_viewers_groups(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course(['enablecompletion' => 1, 'groupmode' => SEPARATEGROUPS, 'groupmodeforce' => 1]);
+        $group1 = $generator->create_group(['courseid' => $course->id]);
+        $group2 = $generator->create_group(['courseid' => $course->id]);
+        $teacher = $generator->create_and_enrol($course, 'teacher');
+        $other = $generator->create_and_enrol($course, 'student', ['suspended' => 1]);
+        $own = $generator->create_and_enrol($course, 'student', ['suspended' => 1]);
+        $generator->create_group_member(['groupid' => $group1->id, 'userid' => $teacher->id]);
+        $generator->create_group_member(['groupid' => $group2->id, 'userid' => $other->id]);
+        $generator->create_group_member(['groupid' => $group1->id, 'userid' => $own->id]);
+        $this->setUser($teacher);
+        $course = get_course($course->id);
+
+        $this->assertTrue(learners::limited_to_own_groups($course));
+        $this->assertSame(
+            get_string('learnernotinyourgroups', 'report_completiondoctor'),
+            learners::why_not($course, (int) $other->id)
+        );
+        $this->assertSame(
+            get_string('learnernotactive', 'report_completiondoctor'),
+            learners::why_not($course, (int) $own->id)
+        );
+
+        $context = \context_course::instance($course->id);
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'teacher']);
+        assign_capability('moodle/course:enrolreview', CAP_ALLOW, $roleid, $context->id);
+        $this->assertSame(
+            get_string('learneraccountsuspended', 'report_completiondoctor'),
+            learners::why_not($course, (int) $own->id)
+        );
+    }
+
+    /**
+     * Nobody to diagnose only when the viewer is limited to their own groups and is in none.
+     */
+    public function test_can_diagnose_anyone(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course(['enablecompletion' => 1, 'groupmode' => SEPARATEGROUPS, 'groupmodeforce' => 1]);
+        $teacher = $generator->create_and_enrol($course, 'teacher');
+        $editingteacher = $generator->create_and_enrol($course, 'editingteacher');
+        $course = get_course($course->id);
+
+        $this->setUser($teacher);
+        $this->assertFalse(learners::can_diagnose_anyone($course));
+        $this->setUser($editingteacher);
+        $this->assertFalse(learners::limited_to_own_groups($course));
+        $this->assertTrue(learners::can_diagnose_anyone($course));
+    }
+
+    /**
      * The count leaves out the learner being diagnosed, learners who completed the course,
      * and learners with a suspended enrolment or site account.
      */

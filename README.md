@@ -6,15 +6,15 @@ Pick a course and a learner, or open the report from the learner's course profil
 
 1. **The settings chain.** Completion tracking on for the site, on for the course, and course completion criteria set.
 2. **Course completion criteria.** Each criterion and the learner's status, combined the way Moodle combines them: activity, prerequisite course and role criteria within their own type first ("all" or "any"), then everything by the overall method.
-3. **Activities.** Each tracked activity, what it requires, the learner's state, grades against the pass grade, quiz attempts and assignment submissions. Two common grade traps are flagged: a pass grade in the gradebook when completion only needs "receive a grade", and completion that asks for a pass grade when the gradebook has none, which makes Moodle count any grade as complete.
-4. **Access restrictions** that hide a tracked activity or section from the learner.
+3. **Activities.** Each tracked activity, whether it is a course completion condition, what it requires in Moodle's own words with the learner's status for each requirement, the learner's state, grades against the pass grade, quiz attempts and assignment submissions. Two common grade traps are flagged: a pass grade in the gradebook when completion only needs "receive a grade", and completion that asks for a pass grade when the gradebook has none, which makes Moodle count any grade as complete.
+4. **Hidden and restricted activities.** Activities and sections hidden from the learner, by a teacher or by an access restriction, and whether each one keeps the learner from completing the course.
 5. **Background tasks.** Whether the regular and daily completion tasks run on their own schedule, are disabled or failing, and whether cron is switched on.
 
-The verdict at the top lists what still blocks the learner. Nothing is changed: the report only reads.
+The verdict at the top names each thing that still blocks the learner once, with its cause, the most fundamental first, and links to the page where it is fixed when you may change it there. Nothing is changed: the report only reads.
 
 ## Requirements
 
-Moodle 4.5 or later.
+Moodle 4.5 to 5.3.
 
 ## Installation
 
@@ -26,7 +26,9 @@ Copy this folder to `report/completiondoctor` (Moodle 4.5 and 5.0) or `public/re
 - From a learner's course profile: Reports > Completion Doctor opens the report for that learner, already filled in.
 - For managers: Site administration > Reports > Completion Doctor. Pick the course, press Continue, then pick the learner.
 
-Under the verdict, the report says how many other learners in the course have not completed it. That count covers the learners you may diagnose (see below) and takes one database query.
+Under the verdict, the report says how many other learners in the course have not completed it, with a link to the course completion report when you may view it. That count covers the learners you may diagnose (see below), says "in your groups" when that is all it covers, and takes one database query.
+
+When the page is opened for someone you cannot diagnose, it says why: a suspended account, an enrolment that is suspended or ended, not enrolled, a role the course does not track, or, for a viewer limited to their own groups, not in those groups.
 
 ## Finding a course and a learner
 

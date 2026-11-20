@@ -26,16 +26,33 @@ require_once($CFG->dirroot . '/report/completiondoctor/lib.php');
 // The attribute comes before the docblock: moodle-cs reads @covers from a docblock directly above the
 // class when it checks against Moodle 4.5, and PHPUnit 11 (Moodle 5.x) reads the attribute.
 #[\PHPUnit\Framework\Attributes\CoversFunction('report_completiondoctor_myprofile_navigation')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('report_completiondoctor_extend_navigation_course')]
 /**
- * Tests for the Completion Doctor link on a learner's course profile.
+ * Tests for the Completion Doctor links in a course's Reports menu and on a learner's course profile.
  *
  * @package    report_completiondoctor
  * @category   test
  * @copyright  2026 Hooknot Digital <rohin@hooknotdigital.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     ::report_completiondoctor_myprofile_navigation
+ * @covers     ::report_completiondoctor_extend_navigation_course
  */
 final class lib_test extends \advanced_testcase {
+    /**
+     * The course Reports menu gets the link, but not the site home, which has no learners.
+     */
+    public function test_reports_menu_link_in_a_course_but_not_on_the_site_home(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+
+        foreach ([[get_course($course->id), 1], [get_site(), 0]] as [$target, $expected]) {
+            $node = \navigation_node::create('Reports');
+            report_completiondoctor_extend_navigation_course($node, $target, \context_course::instance($target->id));
+            $this->assertCount($expected, $node->children);
+        }
+    }
+
     /**
      * A teacher on a learner's course profile gets a link that opens the report filled in.
      */

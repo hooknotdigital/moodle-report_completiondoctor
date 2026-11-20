@@ -2,3 +2,50 @@
 .report-completiondoctor-hint {
     min-height: 1.5em;
 }
+
+/* The status icon starts each row header, in a fixed width so the names line up. */
+.report-completiondoctor .report-completiondoctor-status {
+    display: inline-block;
+    width: 1.75rem;
+}
+
+/* A note under a row header lines up with the name, not the icon. */
+.report-completiondoctor .report-completiondoctor-indent {
+    padding-inline-start: 1.75rem;
+}
+
+/* Row headers name the row; they read as ordinary text, like the cells beside them. */
+.report-completiondoctor th[scope="row"] {
+    font-weight: normal;
+}
+
+/* Two links after one verdict entry need space between them. */
+.report-completiondoctor li .report-completiondoctor-action {
+    display: inline-block;
+    margin-inline-start: .5rem;
+}
+
+/* Some themes remove every outline (for example `* { outline-style: none }`), so the
+   report's own Tab stops, its links and the activity table's scroll box, bring a ring. */
+.report-completiondoctor a:focus-visible,
+.report-completiondoctor a.report-completiondoctor-action:focus-visible,
+.report-completiondoctor .table-responsive:focus-visible {
+    outline: 3px solid var(--bs-emphasis-color, #1d2125);
+    outline-offset: 2px;
+}
+
+/* Links inside sentences are told apart by more than their colour, in every theme. */
+.report-completiondoctor p a,
+.report-completiondoctor li a {
+    text-decoration: underline;
+}
+
+/* The page moves to the report after a diagnosis (amd/src/report.js). The heading only
+   receives focus for that, so it needs no ring. */
+.report-completiondoctor > h3 {
+    scroll-margin-top: 1rem;
+}
+
+.report-completiondoctor > h3:focus {
+    outline: 0;
+}
