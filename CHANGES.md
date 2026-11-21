@@ -1,5 +1,15 @@
 # Changes
 
+## 0.4.2 (21 November 2026)
+
+Fixed:
+
+- On a phone, the links after a verdict entry ("Edit the activity settings", "Edit the course completion conditions") could each end up on a line of their own with no space between them, so the wrong one was easy to tap. Each link is now a little taller, with a small gap above and below.
+
+Added:
+
+- The README names the themes and versions the report has been checked on, and three faults in those themes that are not the report's: Academi's top bar on a phone and its default colours, Boost Magnific's tab row on a phone, and Trema in dark mode.
+
 ## 0.4.1 (20 November 2026)
 
 Fixes from a walk-through of the report as a site administrator, a teacher, a manager and a non-editing teacher on Moodle 4.5 and 5.3, two re-tests and a code review.

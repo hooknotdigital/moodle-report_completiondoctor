@@ -19,10 +19,15 @@
     font-weight: normal;
 }
 
-/* Two links after one verdict entry need space between them. */
+/* Two links after one verdict entry need space between them. When they wrap, each can
+   end up on a line of its own, so each also gets 2 px of padding and 2 px of margin above
+   and below: taller to tap (26 px in Boost on Moodle 4.5, 28 px on 5.3) and never touching
+   the link above or below. */
 .report-completiondoctor li .report-completiondoctor-action {
     display: inline-block;
     margin-inline-start: .5rem;
+    margin-block: .125rem;
+    padding-block: .125rem;
 }
 
 /* Some themes remove every outline (for example `* { outline-style: none }`), so the

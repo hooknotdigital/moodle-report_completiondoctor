@@ -43,6 +43,18 @@ The same rules decide who is counted under the verdict, who gets the profile lin
 
 The search is the web service function `report_completiondoctor_search_learners` (available to the page through AJAX). It checks the capability in the course and returns only the learners described above.
 
+## Themes
+
+The report is built from Moodle's own forms, tables and alerts, so it takes its look from the site's theme. In November 2026 it was checked at phone, tablet and desktop widths on Boost in Moodle 4.5.16 and 5.3.1, and in Moodle 5.3.1 on Academi v5.3, Boost Magnific 9.8.9, Boost Union v5.3-r2, Moove 5.3.1 and Trema 5.3.0.0.
+
+In Moodle 5.3 the report follows the dark colour mode in themes that support it. In Boost, colour modes are an experimental setting and off by default (Boost's theme settings, Experimental settings tab, "Enable colour modes").
+
+Three of those themes have faults of their own, which show on their other pages too:
+
+- **Academi**: with the contact details it shows by default, its top bar is wider than a phone screen and pushes the user menu out of reach. Some of its default colours (orange headings, white text on orange buttons, green links) do not meet the WCAG AA contrast minimum; Academi's primary and secondary colour settings change them.
+- **Boost Magnific**: on a phone, its row of tabs under the page heading does not wrap, so the page is wider than the screen.
+- **Trema**: with colour modes switched on, Trema shows Boost's switch but keeps its light-mode text colours, so the report is hard to read in dark mode. On a Trema site, leave colour modes off.
+
 ## Capability
 
 `report/completiondoctor:view` (course context). Given by default to teachers, editing teachers and managers.
